@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>小麵大戰流感病毒 - 策略進階版</title>
+    <title>小麵大戰流感病毒 - 核彈修復版</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: sans-serif; }
         canvas { display: block; }
@@ -19,23 +19,24 @@
         #boss-hp-fill { width: 100%; height: 100%; background: #ff0055; transition: width 0.1s; }
         #boss-hp-ui { display: none; text-align: right; }
 
-        /* 右上角核彈按鈕 */
+        /* 右上角核彈累積區 */
         #nuke-inventory {
             position: absolute; top: 70px; right: 15px; 
-            z-index: 20; display: flex; flex-direction: column; align-items: center;
-            pointer-events: auto; /* 讓這裡可以被點擊 */
+            z-index: 100; display: flex; flex-direction: column; align-items: center;
+            pointer-events: auto; /* 必須為 auto 才能點擊 */
         }
         #nuke-btn {
-            width: 70px; height: 70px; border-radius: 50%;
-            background: rgba(255, 215, 0, 0.3); border: 2px solid gold;
+            width: 75px; height: 75px; border-radius: 50%;
+            background: rgba(255, 215, 0, 0.4); border: 3px solid gold;
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
             transition: transform 0.1s;
         }
-        #nuke-btn:active { transform: scale(0.9); }
-        #nuke-btn img { width: 45px; height: 45px; }
+        #nuke-btn:active { transform: scale(0.8); }
+        #nuke-btn img { width: 50px; height: 50px; }
         #nuke-count {
-            color: gold; font-weight: bold; font-size: 20px; 
+            color: #fff; font-weight: bold; font-size: 24px; 
+            background: rgba(0,0,0,0.5); padding: 2px 10px; border-radius: 10px;
             text-shadow: 2px 2px 4px #000; margin-top: 5px;
         }
 
@@ -47,7 +48,7 @@
         #overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); display: none; flex-direction: column;
-            justify-content: center; align-items: center; color: white; text-align: center; z-index: 100;
+            justify-content: center; align-items: center; color: white; text-align: center; z-index: 200;
         }
         button.restart-btn { padding: 15px 40px; font-size: 20px; background: #2ecc71; border: none; color: white; border-radius: 50px; margin-top: 20px; }
     </style>
@@ -70,7 +71,7 @@
         <img src="tamiflu.png" alt="Nuke">
     </div>
     <div id="nuke-count">x 0</div>
-    <div style="color: white; font-size: 10px; opacity: 0.7;">點擊發動</div>
+    <div style="color: white; font-size: 12px; font-weight: bold; margin-top:2px;">點我發射</div>
 </div>
 
 <img id="nuke-effect" src="nuke_fx.gif">
@@ -105,7 +106,7 @@ window.addEventListener('resize', resize);
 resize();
 
 class Player {
-    constructor() { this.w = 70; this.h = 70; this.x = canvas.width/2-35; this.y = canvas.height-120; }
+    constructor() { this.w = 70; this.h = 70; this.x = canvas.width/2-35; this.y = canvas.height-150; }
     draw() { ctx.drawImage(imgs.hero, this.x, this.y, this.w, this.h); }
 }
 
@@ -113,7 +114,7 @@ class Bullet {
     constructor(x, y, isEnemy = false) {
         this.x = x; this.y = y; this.isEnemy = isEnemy;
         this.w = isEnemy ? 15 : 20; this.h = isEnemy ? 15 : 40;
-        this.speed = isEnemy ? 5 : -15;
+        this.speed = isEnemy ? 6 : -18;
     }
     update() { this.y += this.speed; }
     draw() {
@@ -128,35 +129,33 @@ class Bullet {
 
 class Enemy {
     constructor(isBoss = false) {
-        this.isBoss = isBoss; this.w = isBoss?180:180; this.h = isBoss?180:180;
-        this.x = isBoss ? canvas.width/2-90 : Math.random()*(canvas.width-60);
-        this.y = -200; this.speed = isBoss?0.8:2+Math.random()*3;
+        this.isBoss = isBoss; 
+        this.w = isBoss ? 200 : 70; // 修正小兵寬度
+        this.h = isBoss ? 200 : 70; 
+        this.x = isBoss ? canvas.width/2-100 : Math.random()*(canvas.width-70);
+        this.y = -220; 
+        this.speed = isBoss ? 0.6 : 3 + Math.random() * 3;
         this.dir = 1; this.shootTimer = 0;
     }
     update() {
         this.y += this.speed;
         if (this.isBoss) {
-            this.x += this.dir * 2;
+            this.x += this.dir * 2.5;
             if (this.x <= 0 || this.x >= canvas.width - this.w) this.dir *= -1;
             if (this.y > 60) this.y = 60;
             this.shootTimer++;
-            if (this.shootTimer > 35) {
+            if (this.shootTimer > 30) {
                 bullets.push(new Bullet(this.x + this.w/2, this.y + this.h, true));
                 this.shootTimer = 0;
             }
         }
     }
-    draw() { 
-        // 畫小兵時稍微調小，魔王維持大圖
-        let drawW = this.isBoss ? this.w : 60;
-        let drawH = this.isBoss ? this.h : 60;
-        ctx.drawImage(this.isBoss?imgs.boss:imgs.virus, this.x, this.y, drawW, drawH); 
-    }
+    draw() { ctx.drawImage(this.isBoss?imgs.boss:imgs.virus, this.x, this.y, this.w, this.h); }
 }
 
 class Item {
-    constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.w = 50; this.h = 50; }
-    update() { this.y += 3; }
+    constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.w = 60; this.h = 60; }
+    update() { this.y += 3.5; }
     draw() { ctx.drawImage(imgs[this.type], this.x, this.y, this.w, this.h); }
 }
 
@@ -166,11 +165,10 @@ canvas.addEventListener('touchmove', (e) => {
     if (gameState !== 'playing') return;
     const t = e.touches[0];
     player.x = t.clientX - player.w/2;
-    player.y = t.clientY - player.h - 50;
+    player.y = t.clientY - player.h - 40;
     e.preventDefault();
 }, {passive: false});
 
-// 【核心修改】吃到後存起來，點擊按鈕才爆
 function useNuke() {
     if (nukeStock > 0 && gameState === 'playing') {
         nukeStock--;
@@ -178,20 +176,20 @@ function useNuke() {
         
         nukeImg.style.display = 'block';
         let s = nukeImg.src; nukeImg.src = ""; nukeImg.src = s;
-        shakeTime = 25;
+        shakeTime = 30;
         
         enemies.forEach(e => { if(!e.isBoss) score++; });
         enemies = enemies.filter(e => e.isBoss);
-        if(isBossStage) bossHP -= 250; // 核彈對魔王傷害
+        if(isBossStage) bossHP -= 250; 
         
-        setTimeout(() => nukeImg.style.display = 'none', 1500);
+        setTimeout(() => nukeImg.style.display = 'none', 1600);
     }
 }
 
 function updateNukeUI() {
     nukeCountDisplay.innerText = "x " + nukeStock;
-    const btn = document.getElementById('nuke-btn');
-    btn.style.background = nukeStock > 0 ? "rgba(255, 215, 0, 0.6)" : "rgba(255, 215, 0, 0.2)";
+    nukeCountDisplay.style.transform = "scale(1.3)";
+    setTimeout(() => { nukeCountDisplay.style.transform = "scale(1)"; }, 200);
 }
 
 function drawBG() {
@@ -204,50 +202,60 @@ function drawBG() {
 
 function update() {
     if (gameState !== 'playing') return;
-    if (Date.now() - lastFire > 300) { bullets.push(new Bullet(player.x + player.w/2, player.y)); lastFire = Date.now(); }
+    if (Date.now() - lastFire > 250) { 
+        bullets.push(new Bullet(player.x + player.w/2, player.y)); 
+        lastFire = Date.now(); 
+    }
 
-    if (score >= 25 && !isBossStage) {
+    if (score >= 30 && !isBossStage) {
         isBossStage = true; enemies.push(new Enemy(true));
         document.getElementById('boss-hp-ui').style.display = 'block';
     }
-    if (!isBossStage && Math.random() < 0.03) enemies.push(new Enemy());
+    if (!isBossStage && Math.random() < 0.04) enemies.push(new Enemy());
 
     bullets.forEach((b, bi) => {
         b.update();
         if (b.isEnemy) {
-            if (checkCol(b, player)) { fever += 10; bullets.splice(bi, 1); shakeTime = 5; }
+            if (checkCol(b, player)) { fever += 12; bullets.splice(bi, 1); shakeTime = 8; }
         } else {
             enemies.forEach((e, ei) => {
                 if (checkCol(b, e)) {
-                    let eHitW = e.isBoss ? 180 : 60; // 碰撞判斷
                     if (e.isBoss) bossHP -= 10; else {
                         let rand = Math.random();
+                        // 提高掉落率：15% 退燒藥，25% 克流感
                         if (rand < 0.15) items.push(new Item(e.x, e.y, 'syrup'));
-                        else if (rand < 0.10) items.push(new Item(e.x, e.y, 'tamiflu')); // 小兵掉核彈
+                        else if (rand < 0.40) items.push(new Item(e.x, e.y, 'tamiflu')); 
                         enemies.splice(ei, 1); score++;
                     }
                     bullets.splice(bi, 1);
                 }
             });
         }
+        if (b.y < -50 || b.y > canvas.height + 50) bullets.splice(bi, 1);
     });
 
     enemies.forEach((e, ei) => {
         e.update();
-        let eW = e.isBoss ? 180 : 60;
-        let eH = e.isBoss ? 180 : 60;
-        if (aCheckCol(player.x, player.y, player.w, player.h, e.x, e.y, eW, eH)) {
-            fever += e.isBoss ? 1 : 20; if(!e.isBoss) enemies.splice(ei, 1); shakeTime = 10;
+        if (checkCol(e, player)) {
+            fever += e.isBoss ? 2 : 25; 
+            if(!e.isBoss) enemies.splice(ei, 1); 
+            shakeTime = 12;
         }
+        if (e.y > canvas.height + 250) enemies.splice(ei, 1);
     });
 
     items.forEach((it, ii) => {
         it.update();
         if (checkCol(it, player)) {
-            if (it.type === 'syrup') fever = Math.max(0, fever - 25); 
-            else { nukeStock++; updateNukeUI(); } // 吃到核彈累積起來
+            if (it.type === 'syrup') {
+                fever = Math.max(0, fever - 30);
+            } else {
+                nukeStock++; 
+                updateNukeUI();
+            }
             items.splice(ii, 1);
         }
+        if (it.y > canvas.height + 100) items.splice(ii, 1);
     });
 
     document.getElementById('fever-bar').style.width = fever + '%';
@@ -256,11 +264,10 @@ function update() {
 }
 
 function checkCol(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
-function aCheckCol(x1,y1,w1,h1, x2,y2,w2,h2) { return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2; }
 
 function draw() {
     ctx.save();
-    if (shakeTime > 0) { ctx.translate(Math.random()*10-5, Math.random()*10-5); shakeTime--; }
+    if (shakeTime > 0) { ctx.translate(Math.random()*12-6, Math.random()*12-6); shakeTime--; }
     drawBG();
     items.forEach(it => it.draw());
     bullets.forEach(b => b.draw());
@@ -274,7 +281,7 @@ function end(win) {
     gameState = win ? 'win' : 'over';
     document.getElementById('overlay').style.display = 'flex';
     document.getElementById('msg-title').innerText = win ? "🏆 恭喜畢業！" : "💤 該休息了...";
-    document.getElementById('msg-desc').innerText = win ? "小麵運用戰術打敗了魔王，身體變強了！" : "發燒太高了，喝口水休息一下再來挑戰！";
+    document.getElementById('msg-desc').innerText = win ? "小麵用策略擊敗了魔王，身體變強了！" : "發燒值太高了，趕快休息喝水吧！";
 }
 
 function resetGame() {
