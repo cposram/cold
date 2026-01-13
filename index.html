@@ -2,62 +2,66 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小麵大戰流感病毒 - 畢業大作戰</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小麵大戰流感病毒 - 手機版</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: "Microsoft JhengHei", sans-serif; }
-        canvas { display: block; cursor: none; } /* 隱藏滑鼠，讓主角跟隨 */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            touch-action: none; /* 防止手機瀏覽器縮放與滑動干擾 */
+        }
+        canvas { display: block; background-color: #000; }
 
-        /* UI 層面設定 */
+        /* UI 層面設定 - 放在頂部防止手指遮擋 */
         #ui-layer {
-            position: absolute; top: 20px; left: 20px; color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); pointer-events: none; z-index: 10;
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none; z-index: 10; display: flex; justify-content: space-between;
         }
-        .bar-label { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
-        .bar-container { width: 250px; height: 15px; background: rgba(255,255,255,0.3); border: 2px solid #fff; border-radius: 10px; overflow: hidden; }
+        .bar-label { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+        .bar-container { width: 140px; height: 12px; background: rgba(255,255,255,0.3); border: 1.5px solid #fff; border-radius: 8px; overflow: hidden; }
         #fever-bar { width: 0%; height: 100%; background: linear-gradient(to right, #ffeb3b, #f44336); transition: width 0.2s; }
+        
+        #boss-hp-ui { display: none; text-align: right; }
+        #boss-bar-container { width: 140px; height: 12px; background: rgba(0,0,0,0.5); border: 1.5px solid #ff0055; border-radius: 5px; }
+        #boss-hp-fill { width: 100%; height: 100%; background: #ff0055; }
 
-        /* 魔王血條 */
-        #boss-hp-ui {
-            position: absolute; top: 20px; right: 20px; text-align: right; display: none; z-index: 10;
-        }
-        #boss-bar-container { width: 350px; height: 20px; background: rgba(0,0,0,0.5); border: 2px solid #ff0055; border-radius: 5px; }
-        #boss-hp-fill { width: 100%; height: 100%; background: #ff0055; transition: width 0.1s; }
-
-        /* 克流感核彈全畫面特效 */
+        /* 特效圖層 */
         #nuke-effect {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             object-fit: cover; display: none; z-index: 5;
-            pointer-events: none; mix-blend-mode: screen; /* 濾掉黑色背景 */
+            pointer-events: none; mix-blend-mode: screen;
         }
 
-        /* 覆蓋層（過場與結局） */
+        /* 結局層 */
         #overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: none; flex-direction: column;
+            background: rgba(0,0,0,0.85); display: none; flex-direction: column;
             justify-content: center; align-items: center; color: white; text-align: center; z-index: 100;
+            padding: 20px; box-sizing: border-box;
         }
-        h1 { font-size: 48px; margin-bottom: 10px; }
-        p { font-size: 24px; margin-bottom: 30px; }
+        h1 { font-size: 32px; margin-bottom: 10px; color: #fff; }
+        p { font-size: 18px; margin-bottom: 30px; line-height: 1.5; }
         button {
-            padding: 15px 40px; font-size: 24px; cursor: pointer;
+            padding: 15px 40px; font-size: 20px; cursor: pointer;
             background: #2ecc71; border: none; color: white; border-radius: 50px;
-            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4); transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
         }
-        button:hover { transform: scale(1.1); background: #27ae60; }
     </style>
 </head>
 <body>
 
 <div id="ui-layer">
-    <div class="bar-label">小麵的發燒值 (Fever)</div>
-    <div class="bar-container"><div id="fever-bar"></div></div>
-    <p style="font-size: 14px; opacity: 0.8;">提示：吃【退燒藥水】降溫，吃【克流感】清場！</p>
-</div>
-
-<div id="boss-hp-ui">
-    <div class="bar-label" style="color: #ff0055;">⚠️ 流感大魔王侵入！</div>
-    <div id="boss-bar-container"><div id="boss-hp-fill"></div></div>
+    <div id="player-ui">
+        <div class="bar-label">發燒值 (Fever)</div>
+        <div class="bar-container"><div id="fever-bar"></div></div>
+    </div>
+    <div id="boss-hp-ui">
+        <div class="bar-label" style="color: #ff0055;">流感大魔王</div>
+        <div id="boss-bar-container"><div id="boss-hp-fill"></div></div>
+    </div>
 </div>
 
 <img id="nuke-effect" src="nuke_fx.gif">
@@ -65,7 +69,7 @@
 <div id="overlay">
     <h1 id="msg-title"></h1>
     <p id="msg-desc"></p>
-    <button onclick="resetGame()">再挑戰一次</button>
+    <button onclick="resetGame()">重新挑戰</button>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -77,16 +81,21 @@ const nukeImg = document.getElementById('nuke-effect');
 
 // 遊戲參數
 let fever = 0;
-let bossHP = 500;
+let bossHP = 1000;
 const FEVER_THRESHOLD = 100;
-const BOSS_MAX_HP = 500;
+const BOSS_MAX_HP = 1000;
 let gameState = 'playing'; 
 let isBossStage = false;
 let score = 0;
+let lastAutoFire = 0;
 
-// 畫布大小適應視窗
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// 設置畫布為全螢幕
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 // 素材載入
 const assets = {
@@ -107,8 +116,9 @@ Object.keys(assets).forEach(key => {
 // 物件類別
 class Player {
     constructor() {
-        this.w = 120; this.h = 120;
-        this.x = 100; this.y = canvas.height / 2;
+        this.w = 80; this.h = 80; // 手機版略小
+        this.x = canvas.width / 2 - this.w / 2;
+        this.y = canvas.height - 150;
     }
     draw() {
         ctx.drawImage(images.hero, this.x, this.y, this.w, this.h);
@@ -118,9 +128,9 @@ class Player {
 class Bullet {
     constructor(x, y, type = 'normal') {
         this.x = x; this.y = y; this.type = type;
-        this.speed = 12; this.w = (type==='normal')?40:80; this.h = (type==='normal')?20:40;
+        this.speed = 15; this.w = (type==='normal')?20:60; this.h = (type==='normal')?40:80;
     }
-    update() { this.x += this.speed; }
+    update() { this.y -= this.speed; }
     draw() {
         ctx.drawImage(this.type==='normal'?images.pill:images.tamiflu, this.x, this.y, this.w, this.h);
     }
@@ -129,15 +139,20 @@ class Bullet {
 class Enemy {
     constructor(isBoss = false) {
         this.isBoss = isBoss;
-        this.w = isBoss ? 300 : 70; this.h = isBoss ? 300 : 70;
-        this.x = canvas.width + 100;
-        this.y = Math.random() * (canvas.height - this.h);
-        this.speed = isBoss ? 1.5 : (3 + Math.random() * 4);
+        this.w = isBoss ? 200 : 60; this.h = isBoss ? 200 : 60;
+        this.x = isBoss ? (canvas.width/2 - 100) : (Math.random() * (canvas.width - this.w));
+        this.y = -250;
+        this.speed = isBoss ? 0.5 : (2 + Math.random() * 3);
         this.hp = isBoss ? BOSS_MAX_HP : 1;
+        this.dir = 1; // Boss 左右移動用
     }
     update() {
-        this.x -= this.speed;
-        if (!this.isBoss) this.y += Math.sin(this.x * 0.05) * 3; // 蛇行走位
+        this.y += this.speed;
+        if (this.isBoss) {
+            this.x += this.dir * 2;
+            if (this.x <= 0 || this.x >= canvas.width - this.w) this.dir *= -1;
+            if (this.y > 50) this.y = 50; // Boss 停在上方區域
+        }
     }
     draw() {
         ctx.drawImage(this.isBoss ? images.boss : images.virus, this.x, this.y, this.w, this.h);
@@ -146,10 +161,10 @@ class Enemy {
 
 class Item {
     constructor(x, y, type) {
-        this.x = x; this.y = y; this.type = type; // syrup or tamiflu
-        this.w = 60; this.h = 60;
+        this.x = x; this.y = y; this.type = type;
+        this.w = 50; this.h = 50;
     }
-    update() { this.x -= 3; }
+    update() { this.y += 3; }
     draw() {
         ctx.drawImage(images[this.type], this.x, this.y, this.w, this.h);
     }
@@ -161,13 +176,30 @@ let bullets = [];
 let enemies = [];
 let items = [];
 
-// 控制
-window.addEventListener('mousemove', (e) => {
-    player.y = e.clientY - player.h/2;
+// --- 手機觸控控制 ---
+function handleTouch(e) {
+    if (gameState !== 'playing') return;
+    const touch = e.touches[0];
+    // 讓主角中心跟隨手指，並適當偏移讓手指不擋住主角
+    player.x = touch.clientX - player.w / 2;
+    player.y = touch.clientY - player.h - 20; 
+
+    // 邊界限制
+    if (player.x < 0) player.x = 0;
+    if (player.x > canvas.width - player.w) player.x = canvas.width - player.w;
+    if (player.y < 0) player.y = 0;
+    if (player.y > canvas.height - player.h) player.y = canvas.height - player.h;
+}
+
+canvas.addEventListener('touchstart', (e) => {
+    handleTouch(e);
+    // 點擊發射額外子彈
+    bullets.push(new Bullet(player.x + player.w/2 - 10, player.y));
 });
-window.addEventListener('mousedown', () => {
-    if(gameState === 'playing') bullets.push(new Bullet(player.x + 100, player.y + 50));
-});
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    handleTouch(e);
+}, { passive: false });
 
 // 碰撞檢查
 function checkCollision(a, b) {
@@ -178,13 +210,11 @@ function checkCollision(a, b) {
 function triggerNuke() {
     nukeImg.style.display = 'block';
     let currentSrc = nukeImg.src;
-    nukeImg.src = ""; nukeImg.src = currentSrc; // 重啟 GIF
+    nukeImg.src = ""; nukeImg.src = currentSrc;
 
-    // 效果：清空小兵
     enemies.forEach(en => { if(!en.isBoss) score++; });
     enemies = enemies.filter(en => en.isBoss);
-    // 效果：Boss重傷
-    if (isBossStage) bossHP -= 120;
+    if (isBossStage) bossHP -= 200;
 
     setTimeout(() => { nukeImg.style.display = 'none'; }, 1800);
 }
@@ -192,52 +222,60 @@ function triggerNuke() {
 function update() {
     if (gameState !== 'playing') return;
 
-    // 生成邏輯
-    if (score >= 20 && !isBossStage) {
+    // 自動射擊邏輯 (每 400ms 射一顆)
+    let now = Date.now();
+    if (now - lastAutoFire > 400) {
+        bullets.push(new Bullet(player.x + player.w/2 - 10, player.y));
+        lastAutoFire = now;
+    }
+
+    // 生成敵人
+    if (score >= 25 && !isBossStage) {
         isBossStage = true;
         enemies.push(new Enemy(true));
         document.getElementById('boss-hp-ui').style.display = 'block';
     }
-    if (!isBossStage && Math.random() < 0.03) enemies.push(new Enemy());
+    if (!isBossStage && Math.random() < 0.04) enemies.push(new Enemy());
 
-    // 子彈與碰撞
+    // 子彈處理
     bullets.forEach((b, bi) => {
         b.update();
         enemies.forEach((e, ei) => {
             if (checkCollision(b, e)) {
                 if (e.isBoss) {
-                    bossHP -= 5;
+                    bossHP -= 10;
                     bullets.splice(bi, 1);
                 } else {
-                    if (Math.random() < 0.2) items.push(new Item(e.x, e.y, 'syrup'));
-                    else if (Math.random() < 0.1) items.push(new Item(e.x, e.y, 'tamiflu'));
+                    if (Math.random() < 0.15) items.push(new Item(e.x, e.y, 'syrup'));
+                    else if (Math.random() < 0.08) items.push(new Item(e.x, e.y, 'tamiflu'));
                     enemies.splice(ei, 1);
                     bullets.splice(bi, 1);
                     score++;
                 }
             }
         });
-        if (b.x > canvas.width) bullets.splice(bi, 1);
+        if (b.y < -100) bullets.splice(bi, 1);
     });
 
-    // 敵人與主角碰撞
+    // 敵人處理
     enemies.forEach((e, ei) => {
         e.update();
         if (checkCollision(player, e)) {
-            fever += e.isBoss ? 2 : 15;
+            fever += e.isBoss ? 1 : 15;
             if (!e.isBoss) enemies.splice(ei, 1);
         }
-        if (e.x < -300) enemies.splice(ei, 1);
+        if (e.y > canvas.height) enemies.splice(ei, 1);
     });
 
-    // 道具撿取
+    // 道具處理
     items.forEach((it, ii) => {
         it.update();
         if (checkCollision(player, it)) {
-            if (it.type === 'syrup') fever = Math.max(0, fever - 30);
+            if (it.type === 'syrup') fever = Math.max(0, fever - 25);
             else triggerNuke();
             items.splice(ii, 1);
         }
+        if (it.y > canvas.height) items.splice(ii, 1);
     });
 
     // UI 更新
@@ -246,14 +284,15 @@ function update() {
         document.getElementById('boss-hp-fill').style.width = (bossHP / BOSS_MAX_HP * 100) + '%';
     }
 
-    // 結束判斷
     if (fever >= FEVER_THRESHOLD) endGame(false);
     if (bossHP <= 0) endGame(true);
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
+    if (images.bg.complete) {
+        ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
+    }
 
     items.forEach(it => it.draw());
     bullets.forEach(b => b.draw());
@@ -274,11 +313,11 @@ function endGame(isWin) {
     if (isWin) {
         document.getElementById('msg-title').innerText = "🏆 戰勝流感！";
         document.getElementById('msg-title').style.color = "#2ecc71";
-        document.getElementById('msg-desc').innerText = "恭喜小麵從流感畢業了！你現在超級強壯！";
+        document.getElementById('msg-desc').innerText = "恭喜小麵從流感畢業了！\n你現在擁有超級抗體，超級強壯！";
     } else {
-        document.getElementById('msg-title').innerText = "💤 需要休息了...";
+        document.getElementById('msg-title').innerText = "💤 需要休息...";
         document.getElementById('msg-title').style.color = "#f44336";
-        document.getElementById('msg-desc').innerText = "發燒值太高了，喝口水休息一下，再回來消滅病毒！";
+        document.getElementById('msg-desc').innerText = "病毒太強了，小麵累得睡著了。\n喝口水、休息一下再來挑戰！";
     }
 }
 
@@ -288,12 +327,20 @@ function resetGame() {
     enemies = []; bullets = []; items = [];
     document.getElementById('overlay').style.display = 'none';
     document.getElementById('boss-hp-ui').style.display = 'none';
+    player.x = canvas.width / 2 - player.w / 2;
+    player.y = canvas.height - 150;
     draw();
 }
 
-// 啟動遊戲
-images.bg.onload = () => { draw(); };
-window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+// 資源載入檢查
+let loaded = 0;
+const totalAssets = Object.keys(assets).length;
+Object.values(images).forEach(img => {
+    img.onload = () => {
+        loaded++;
+        if (loaded === totalAssets) draw();
+    };
+});
 </script>
 </body>
 </html>
