@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>小麵大戰流感病毒 - 精緻平衡版</title>
+    <title>小麵大戰流感病毒 - 全平台相容版</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: "Microsoft JhengHei", sans-serif; }
         canvas { display: block; }
@@ -21,11 +21,11 @@
         #boss-hp-fill { width: 100%; height: 100%; background: #ff0055; transition: width 0.1s; }
         #boss-hp-ui { display: none; text-align: right; }
 
-        /* 右上角核彈累積區 - 重新設計為精緻小巧 */
+        /* 右上角技能區 */
         #nuke-inventory {
             position: absolute; top: 60px; right: 15px; 
             z-index: 100; display: flex; flex-direction: column; align-items: center;
-            pointer-events: auto;
+            pointer-events: auto; cursor: pointer;
         }
         #nuke-btn {
             width: 50px; height: 50px; border-radius: 50%;
@@ -44,7 +44,7 @@
 
         #nuke-effect {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; display: none; z-index: 5; mix-blend-mode: screen;
+            object-fit: cover; display: none; z-index: 5; mix-blend-mode: screen; pointer-events: none;
         }
 
         /* 結局層面 */
@@ -53,7 +53,7 @@
             background: rgba(0,0,0,0.85); display: none; flex-direction: column;
             justify-content: center; align-items: center; color: white; text-align: center; z-index: 200;
         }
-        button.restart-btn { padding: 12px 35px; font-size: 18px; background: #2ecc71; border: none; color: white; border-radius: 50px; margin-top: 20px; }
+        button.restart-btn { padding: 12px 35px; font-size: 18px; background: #2ecc71; border: none; color: white; border-radius: 50px; margin-top: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -100,6 +100,14 @@ const assets = { hero: 'hero.png', virus: 'virus_small.png', boss: 'boss.png', p
 const imgs = {};
 Object.keys(assets).forEach(k => { imgs[k] = new Image(); imgs[k].src = assets[k]; });
 
+// 鍵盤狀態追蹤
+const keys = {};
+window.addEventListener('keydown', (e) => { 
+    keys[e.key] = true; 
+    if(e.key === ' ' || e.code === 'Space') useNuke(); // 空白鍵放招
+});
+window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -108,7 +116,11 @@ window.addEventListener('resize', resize);
 resize();
 
 class Player {
-    constructor() { this.w = 65; this.h = 65; this.x = canvas.width/2-32; this.y = canvas.height-140; }
+    constructor() { 
+        this.w = 65; this.h = 65; 
+        this.x = canvas.width/2 - 32; 
+        this.y = canvas.height - 140; 
+    }
     draw() { ctx.drawImage(imgs.hero, this.x, this.y, this.w, this.h); }
 }
 
@@ -163,27 +175,32 @@ class Item {
 
 let player = new Player(), bullets = [], enemies = [], items = [], lastFire = 0;
 
-canvas.addEventListener('touchmove', (e) => {
+// 通用的移動處理 (Pointer Events 支援滑鼠與觸控)
+function handlePointer(e) {
     if (gameState !== 'playing') return;
-    const t = e.touches[0];
-    player.x = t.clientX - player.w/2;
-    player.y = t.clientY - player.h - 40;
-    e.preventDefault();
-}, {passive: false});
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    player.x = clientX - rect.left - player.w/2;
+    // 電腦版不偏移，手機版(touches存在)則向上偏移40避開手指
+    const yOffset = (e.touches) ? 80 : 0;
+    player.y = clientY - rect.top - player.h/2 - yOffset;
+}
+
+canvas.addEventListener('pointermove', handlePointer);
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handlePointer(e); }, {passive: false});
 
 function useNuke() {
     if (nukeStock > 0 && gameState === 'playing') {
         nukeStock--;
         updateNukeUI();
-        
         nukeImg.style.display = 'block';
         let s = nukeImg.src; nukeImg.src = ""; nukeImg.src = s;
         shakeTime = 30;
-        
         enemies.forEach(e => { if(!e.isBoss) score++; });
         enemies = enemies.filter(e => e.isBoss);
         if(isBossStage) bossHP -= 300; 
-        
         setTimeout(() => nukeImg.style.display = 'none', 1600);
     }
 }
@@ -201,8 +218,23 @@ function drawBG() {
     ctx.drawImage(imgs.bg, x, y, imgs.bg.width * scale, imgs.bg.height * scale);
 }
 
+function handleKeyboardInput() {
+    const moveSpeed = 8;
+    if (keys['ArrowUp'] || keys['w'] || keys['W']) player.y -= moveSpeed;
+    if (keys['ArrowDown'] || keys['s'] || keys['S']) player.y += moveSpeed;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) player.x -= moveSpeed;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) player.x += moveSpeed;
+    
+    // 邊界限制
+    player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
+}
+
 function update() {
     if (gameState !== 'playing') return;
+    
+    handleKeyboardInput();
+
     if (Date.now() - lastFire > 260) { 
         bullets.push(new Bullet(player.x + player.w/2, player.y)); 
         lastFire = Date.now(); 
@@ -223,9 +255,8 @@ function update() {
                 if (checkCol(b, e)) {
                     if (e.isBoss) bossHP -= 10; else {
                         let rand = Math.random();
-                        // 平衡掉落率：12% 退燒藥，8% 克流感
                         if (rand < 0.12) items.push(new Item(e.x, e.y, 'syrup'));
-                        else if (rand < 0.20) items.push(new Item(e.x, e.y, 'tamiflu')); // 下修機率
+                        else if (rand < 0.20) items.push(new Item(e.x, e.y, 'tamiflu'));
                         enemies.splice(ei, 1); score++;
                     }
                     bullets.splice(bi, 1);
