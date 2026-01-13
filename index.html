@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>小麵大戰流感病毒 - 全平台相容版</title>
+    <title>小麵大戰流感病毒 - 快速進王版</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: "Microsoft JhengHei", sans-serif; }
         canvas { display: block; }
@@ -240,7 +240,8 @@ function update() {
         lastFire = Date.now(); 
     }
 
-    if (score >= 35 && !isBossStage) {
+    // 修改處：將門檻從 35 調降至 10，讓魔王更快出現
+    if (score >= 20 && !isBossStage) {
         isBossStage = true; enemies.push(new Enemy(true));
         document.getElementById('boss-hp-ui').style.display = 'block';
     }
