@@ -261,8 +261,8 @@ function update() {
                     } else {
                         // --- 修改 3：大幅提高普通怪掉寶率 (總機率從 20% 升至約 45%) ---
                         let rand = Math.random();
-                        if (rand < 0.35) items.push(new Item(e.x, e.y, 'syrup'));
-                        else if (rand < 0.25) items.push(new Item(e.x, e.y, 'tamiflu'));
+                        if (rand < 0.15) items.push(new Item(e.x, e.y, 'syrup'));
+                        else if (rand < 0.45) items.push(new Item(e.x, e.y, 'tamiflu'));
                         enemies.splice(ei, 1); score++;
                     }
                     bullets.splice(bi, 1);
@@ -314,7 +314,7 @@ function draw() {
 function end(win) {
     gameState = win ? 'win' : 'over';
     document.getElementById('overlay').style.display = 'flex';
-    document.getElementById('msg-title').innerText = win ? "🏆 恭喜痊癒！" : "💤 需要休息了...";
+    document.getElementById('msg-title').innerText = win ? "🏆 恭喜康復！" : "💤 需要休息了...";
     document.getElementById('msg-desc').innerText = win ? "小菲小麵運用戰術擊敗了魔王，身體變強了！" : "發燒值太高了，趕快休息喝水吧！";
 }
 
