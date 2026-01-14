@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>小麵大戰流感病毒 - 快速進王版</title>
+    <title>小麵大戰流感病毒 - 強化爽快版</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: "Microsoft JhengHei", sans-serif; }
         canvas { display: block; }
@@ -117,8 +117,9 @@ resize();
 
 class Player {
     constructor() { 
-        this.w = 65; this.h = 65; 
-        this.x = canvas.width/2 - 32; 
+        // --- 修改 1：加大主角尺寸 (從 65 改為 85) ---
+        this.w = 85; this.h = 85; 
+        this.x = canvas.width/2 - this.w/2; 
         this.y = canvas.height - 140; 
     }
     draw() { ctx.drawImage(imgs.hero, this.x, this.y, this.w, this.h); }
@@ -175,7 +176,6 @@ class Item {
 
 let player = new Player(), bullets = [], enemies = [], items = [], lastFire = 0;
 
-// 通用的移動處理 (Pointer Events 支援滑鼠與觸控)
 function handlePointer(e) {
     if (gameState !== 'playing') return;
     const rect = canvas.getBoundingClientRect();
@@ -183,7 +183,6 @@ function handlePointer(e) {
     const clientY = e.clientY || (e.touches && e.touches[0].clientY);
     
     player.x = clientX - rect.left - player.w/2;
-    // 電腦版不偏移，手機版(touches存在)則向上偏移40避開手指
     const yOffset = (e.touches) ? 80 : 0;
     player.y = clientY - rect.top - player.h/2 - yOffset;
 }
@@ -225,7 +224,6 @@ function handleKeyboardInput() {
     if (keys['ArrowLeft'] || keys['a'] || keys['A']) player.x -= moveSpeed;
     if (keys['ArrowRight'] || keys['d'] || keys['D']) player.x += moveSpeed;
     
-    // 邊界限制
     player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
     player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
 }
@@ -240,7 +238,6 @@ function update() {
         lastFire = Date.now(); 
     }
 
-    // 修改處：將門檻從 35 調降至 10，讓魔王更快出現
     if (score >= 30 && !isBossStage) {
         isBossStage = true; enemies.push(new Enemy(true));
         document.getElementById('boss-hp-ui').style.display = 'block';
@@ -254,10 +251,18 @@ function update() {
         } else {
             enemies.forEach((e, ei) => {
                 if (checkCol(b, e)) {
-                    if (e.isBoss) bossHP -= 10; else {
+                    if (e.isBoss) {
+                        bossHP -= 10;
+                        // --- 修改 2：打魔王時也會隨機掉寶 (5% 機率) ---
+                        if (Math.random() < 0.05) {
+                            let type = Math.random() < 0.6 ? 'syrup' : 'tamiflu';
+                            items.push(new Item(e.x + Math.random() * e.w, e.y + e.h/2, type));
+                        }
+                    } else {
+                        // --- 修改 3：大幅提高普通怪掉寶率 (總機率從 20% 升至約 45%) ---
                         let rand = Math.random();
-                        if (rand < 0.12) items.push(new Item(e.x, e.y, 'syrup'));
-                        else if (rand < 0.20) items.push(new Item(e.x, e.y, 'tamiflu'));
+                        if (rand < 0.25) items.push(new Item(e.x, e.y, 'syrup'));
+                        else if (rand < 0.45) items.push(new Item(e.x, e.y, 'tamiflu'));
                         enemies.splice(ei, 1); score++;
                     }
                     bullets.splice(bi, 1);
