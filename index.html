@@ -118,7 +118,7 @@ resize();
 class Player {
     constructor() { 
         // --- 修改 1：加大主角尺寸 (從 65 改為 85) ---
-        this.w = 85; this.h = 85; 
+        this.w = 120; this.h = 120; 
         this.x = canvas.width/2 - this.w/2; 
         this.y = canvas.height - 140; 
     }
@@ -262,7 +262,7 @@ function update() {
                         // --- 修改 3：大幅提高普通怪掉寶率 (總機率從 20% 升至約 45%) ---
                         let rand = Math.random();
                         if (rand < 0.25) items.push(new Item(e.x, e.y, 'syrup'));
-                        else if (rand < 0.45) items.push(new Item(e.x, e.y, 'tamiflu'));
+                        else if (rand < 0.25) items.push(new Item(e.x, e.y, 'tamiflu'));
                         enemies.splice(ei, 1); score++;
                     }
                     bullets.splice(bi, 1);
