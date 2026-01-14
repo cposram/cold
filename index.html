@@ -241,7 +241,7 @@ function update() {
     }
 
     // 修改處：將門檻從 35 調降至 10，讓魔王更快出現
-    if (score >= 20 && !isBossStage) {
+    if (score >= 30 && !isBossStage) {
         isBossStage = true; enemies.push(new Enemy(true));
         document.getElementById('boss-hp-ui').style.display = 'block';
     }
