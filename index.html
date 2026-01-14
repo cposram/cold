@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>小菲小麵大戰流感病毒 - 究極爽快版</title>
+    <title>小菲小麵大戰流感病毒 - 獨立掉寶版</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: "Microsoft JhengHei", sans-serif; }
         canvas { display: block; }
@@ -29,7 +29,6 @@
             width: 50px; height: 50px; border-radius: 50%;
             background: rgba(255, 255, 255, 0.15); border: 1.5px solid rgba(255, 215, 0, 0.8);
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
         }
         #nuke-btn img { width: 32px; height: 32px; filter: drop-shadow(0 0 2px gold); }
         #nuke-count { color: #fff; font-weight: bold; font-size: 16px; margin-top: 4px; text-shadow: 1px 1px 3px #000; }
@@ -83,12 +82,7 @@ let shakeTime = 0, nukeStock = 0;
 const FEVER_MAX = 100, BOSS_MAX = 1500;
 const assets = { hero: 'hero.png', virus: 'virus_small.png', boss: 'boss.png', pill: 'pill.png', syrup: 'syrup.png', tamiflu: 'tamiflu.png', bg: 'bg.jpg' };
 const imgs = {};
-Object.keys(assets).forEach(k => { 
-    imgs[k] = new Image(); 
-    imgs[k].src = assets[k];
-    // 除錯用：如果圖片載入失敗會在控制台顯示
-    imgs[k].onerror = () => console.error("無法載入圖片:", assets[k]);
-});
+Object.keys(assets).forEach(k => { imgs[k] = new Image(); imgs[k].src = assets[k]; });
 
 const keys = {};
 window.addEventListener('keydown', (e) => { 
@@ -106,13 +100,13 @@ resize();
 
 class Player {
     constructor() { 
-        this.w = 110; this.h = 110; 
+        this.w = 100; this.h = 100; // 保持你設定的 120 大尺寸
         this.x = canvas.width/2 - this.w/2; 
         this.y = canvas.height - 150; 
     }
     draw() { 
         if(imgs.hero.complete) ctx.drawImage(imgs.hero, this.x, this.y, this.w, this.h);
-        else { ctx.fillStyle = "lime"; ctx.fillRect(this.x, this.y, this.w, this.h); } // 沒圖時顯示方塊
+        else { ctx.fillStyle = "#0f0"; ctx.fillRect(this.x, this.y, this.w, this.h); }
     }
 }
 
@@ -129,7 +123,7 @@ class Bullet {
             ctx.beginPath(); ctx.arc(this.x, this.y, 6, 0, Math.PI*2); ctx.fill();
         } else {
             if(imgs.pill.complete) ctx.drawImage(imgs.pill, this.x - this.w/2, this.y, this.w, this.h);
-            else { ctx.fillStyle = "white"; ctx.fillRect(this.x - this.w/2, this.y, 10, 20); }
+            else { ctx.fillStyle = "cyan"; ctx.fillRect(this.x-5, this.y, 10, 20); }
         }
     }
 }
@@ -165,8 +159,8 @@ class Enemy {
 }
 
 class Item {
-    constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.w = 45; this.h = 45; }
-    update() { this.y += 3.2; }
+    constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.w = 50; this.h = 50; }
+    update() { this.y += 3.5; }
     draw() { 
         if(imgs[this.type].complete) ctx.drawImage(imgs[this.type], this.x, this.y, this.w, this.h);
         else { ctx.fillStyle = this.type === 'syrup' ? "orange" : "gold"; ctx.fillRect(this.x, this.y, this.w, this.h); }
@@ -211,7 +205,7 @@ function update() {
     if (gameState !== 'playing') return;
     
     // 鍵盤移動
-    const moveSpeed = 8;
+    const moveSpeed = 9;
     if (keys['ArrowUp'] || keys['w']) player.y -= moveSpeed;
     if (keys['ArrowDown'] || keys['s']) player.y += moveSpeed;
     if (keys['ArrowLeft'] || keys['a']) player.x -= moveSpeed;
@@ -239,16 +233,18 @@ function update() {
                 if (checkCol(b, e)) {
                     if (e.isBoss) {
                         bossHP -= 10;
-                        if (Math.random() < 0.06) { // 魔王掉寶機率提升至 6%
-                            let type = Math.random() < 0.5 ? 'syrup' : 'tamiflu';
-                            items.push(new Item(e.x + Math.random() * e.w, e.y + e.h/2, type));
-                        }
+                        // --- 魔王獨立掉寶 ---
+                        if (Math.random() < 0.04) items.push(new Item(e.x + Math.random() * e.w, e.y + e.h/2, 'syrup'));
+                        if (Math.random() < 0.03) items.push(new Item(e.x + Math.random() * e.w, e.y + e.h/2, 'tamiflu'));
                     } else {
-                        // --- 核心修正：明確區分掉落機率 ---
-                        let rand = Math.random();
-                        if (rand < 0.20) items.push(new Item(e.x, e.y, 'syrup'));   // 20% 藥水
-                        else if (rand < 0.40) items.push(new Item(e.x, e.y, 'tamiflu')); // 20% 核彈
-                        // 總掉寶機率 40%
+                        // --- 調整掉落率：小怪死亡時獨立判斷 ---
+                        // 你可以分開改下面的數字：0.30 代表 30%
+                        if (Math.random() < 0.3) { 
+                            items.push(new Item(e.x, e.y, 'syrup')); // 掉藥水
+                        }
+                        if (Math.random() < 0.45) { 
+                            items.push(new Item(e.x, e.y, 'tamiflu')); // 掉核彈
+                        }
                         
                         enemies.splice(ei, 1); score++;
                     }
@@ -290,7 +286,7 @@ function draw() {
     ctx.save();
     if (shakeTime > 0) { ctx.translate(Math.random()*10-5, Math.random()*10-5); shakeTime--; }
     
-    // --- 防黑屏：先畫底色再畫背景圖 ---
+    // 背景保護色
     ctx.fillStyle = "#001";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
@@ -324,7 +320,6 @@ function resetGame() {
     draw();
 }
 
-// 直接啟動，不再等待背景圖載入
 draw();
 </script>
 </body>
